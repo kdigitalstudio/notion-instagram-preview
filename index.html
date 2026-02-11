@@ -799,24 +799,6 @@ body {
 .delete-btn:hover {
     background: #ff3b30;
 }
-.add-images-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 24px;
-    background: linear-gradient(135deg, #b794d5 0%, #f4c3d9 100%);
-    color: white;
-    border: none;
-    border-radius: 25px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: transform 0.2s;
-}
-.add-images-btn:hover {
-    transform: translateY(-2px);
-}
 #fileInput {
     display: none;
 }
@@ -824,7 +806,6 @@ body {
 <div class="grid-container">
     <div class="instagram-grid" id="grid"></div>
 </div>
-<button class="add-images-btn" onclick="document.getElementById('fileInput').click()">+ Add Images</button>
 <input type="file" id="fileInput" accept="image/*" multiple>
 <script>
 let images = ${JSON.stringify(uploadedImages)};
