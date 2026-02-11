@@ -36,7 +36,15 @@
             background: #f0f0f0;
             border-radius: 4px;
             overflow: hidden;
-            cursor: pointer;
+            cursor: move;
+        }
+
+        .grid-item.dragging {
+            opacity: 0.5;
+        }
+
+        .grid-item.drag-over {
+            border: 2px dashed #667eea;
         }
 
         .grid-item img {
@@ -155,8 +163,11 @@
                 const item = document.createElement('div');
                 item.className = 'grid-item';
                 item.style.aspectRatio = aspectRatio;
+                item.dataset.index = i;
                 
                 if (images[i]) {
+                    item.draggable = true;
+                    
                     const img = document.createElement('img');
                     img.src = images[i];
                     img.alt = `Grid image ${i + 1}`;
@@ -170,6 +181,13 @@
                         deleteImage(i);
                     };
                     item.appendChild(deleteBtn);
+                    
+                    // Add drag event listeners
+                    item.addEventListener('dragstart', handleDragStart);
+                    item.addEventListener('dragover', handleDragOver);
+                    item.addEventListener('drop', handleDrop);
+                    item.addEventListener('dragend', handleDragEnd);
+                    item.addEventListener('dragleave', handleDragLeave);
                 } else {
                     item.classList.add('empty');
                     item.onclick = () => document.getElementById('fileInput').click();
@@ -177,6 +195,63 @@
                 
                 grid.appendChild(item);
             }
+        }
+
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.currentTarget.dataset.index);
+            e.currentTarget.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            
+            const dropTarget = e.currentTarget;
+            if (dropTarget.classList.contains('grid-item') && !dropTarget.classList.contains('empty')) {
+                dropTarget.classList.add('drag-over');
+            }
+            
+            return false;
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dropTarget = e.currentTarget;
+            dropTarget.classList.remove('drag-over');
+            
+            const dropIndex = parseInt(dropTarget.dataset.index);
+            
+            if (draggedIndex !== null && draggedIndex !== dropIndex && images[dropIndex]) {
+                // Swap the images
+                const temp = images[draggedIndex];
+                images[draggedIndex] = images[dropIndex];
+                images[dropIndex] = temp;
+                
+                renderGrid();
+                saveToUrl();
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            e.currentTarget.classList.remove('dragging');
+            
+            // Remove drag-over class from all items
+            document.querySelectorAll('.grid-item').forEach(item => {
+                item.classList.remove('drag-over');
+            });
+            
+            draggedIndex = null;
         }
 
         function deleteImage(index) {
