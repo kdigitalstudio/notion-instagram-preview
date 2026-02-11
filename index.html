@@ -368,6 +368,43 @@
             background: #48bb78;
         }
 
+        .color-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .color-row:last-child {
+            border-bottom: none;
+        }
+
+        .color-row label {
+            margin-bottom: 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .color-row-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .color-row input[type="color"] {
+            width: 36px;
+            height: 36px;
+            padding: 2px;
+            border-radius: 8px;
+        }
+
+        .color-hex {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #718096;
+        }
+
         .image-list {
             margin-top: 15px;
             max-height: 200px;
@@ -382,6 +419,26 @@
             background: white;
             border-radius: 8px;
             margin-bottom: 8px;
+            cursor: move;
+            transition: background 0.2s;
+        }
+
+        .image-item:hover {
+            background: #f7fafc;
+        }
+
+        .image-item.dragging {
+            opacity: 0.5;
+        }
+
+        .drag-handle {
+            color: #cbd5e0;
+            font-size: 18px;
+            cursor: grab;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
         }
 
         .image-item img {
@@ -414,16 +471,20 @@
     </style>
 </head>
 <body>
-    <!-- Ko-fi Support -->
+    <!-- Ko-fi Support Box -->
     <div class="kofi-container">
-        <div class="kofi-text">Enjoying this widget? Support my work!</div>
-        <a href="https://ko-fi.com/kdigitalstudio" target="_blank" class="kofi-button">☕ Buy Me a Coffee</a>
+        <div class="kofi-text">Are you loving it? Thank you for your support!</div>
+        <a href="https://ko-fi.com/kdigitalstudio" target="_blank" class="kofi-button">
+            ☕ Buy me a diet coke
+        </a>
     </div>
 
-    <!-- Feedback -->
+    <!-- Feedback Box -->
     <div class="feedback-container">
-        <div class="feedback-text">Have feedback or ideas?</div>
-        <a href="https://forms.gle/your-feedback-form" target="_blank" class="feedback-button">💬 Share Feedback</a>
+        <div class="feedback-text">Have feedback or a feature request?</div>
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSfns1MuZ5_-2Ks7enwSlN4VTMFqJ4LW60yn3Ujex4Uxn0CaXw/viewform?usp=header" target="_blank" class="feedback-button">
+            📝 Share feedback
+        </a>
     </div>
 
     <div class="container">
@@ -456,8 +517,14 @@
             </div>
 
             <div class="form-group">
-                <label for="bgColor">Background Color</label>
-                <input type="color" id="bgColor" value="#ffffff">
+                <label>Background Color</label>
+                <div class="color-row">
+                    <label for="bgColor">Widget Background</label>
+                    <div class="color-row-right">
+                        <span class="color-hex" id="bg-color-hex">#FFFFFF</span>
+                        <input type="color" id="bgColor" value="#ffffff">
+                    </div>
+                </div>
             </div>
 
             <div class="form-group">
@@ -477,7 +544,7 @@
                 <iframe id="previewFrame" class="preview-frame"></iframe>
             </div>
 
-            <button type="submit" class="generate-btn">Generate Notion Embed URL</button>
+            <button type="submit" class="generate-btn">Generate</button>
         </form>
 
         <div class="result-section" id="resultSection">
@@ -530,6 +597,7 @@
             
             document.getElementById('bgColor').addEventListener('input', (e) => {
                 settings.bgColor = e.target.value;
+                document.getElementById('bg-color-hex').textContent = e.target.value.toUpperCase();
                 updatePreview();
             });
 
@@ -585,12 +653,60 @@
             
             imageList.style.display = 'block';
             imageList.innerHTML = uploadedImages.map((img, index) => `
-                <div class="image-item">
+                <div class="image-item" draggable="true" data-index="${index}">
+                    <span class="drag-handle">⋮⋮</span>
                     <img src="${img}" alt="Image ${index + 1}">
                     <span>Image ${index + 1}</span>
                     <button onclick="deleteImage(${index})">Delete</button>
                 </div>
             `).join('');
+            
+            // Add drag and drop event listeners
+            const items = imageList.querySelectorAll('.image-item');
+            items.forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragover', handleDragOver);
+                item.addEventListener('drop', handleDrop);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
+        let draggedIndex = null;
+
+        function handleDragStart(e) {
+            draggedIndex = parseInt(e.target.dataset.index);
+            e.target.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const dropIndex = parseInt(e.currentTarget.dataset.index);
+            
+            if (draggedIndex !== null && draggedIndex !== dropIndex) {
+                // Reorder the images array
+                const draggedItem = uploadedImages[draggedIndex];
+                uploadedImages.splice(draggedIndex, 1);
+                uploadedImages.splice(dropIndex, 0, draggedItem);
+                
+                updateImageList();
+                updatePreview();
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedIndex = null;
         }
 
         function deleteImage(index) {
